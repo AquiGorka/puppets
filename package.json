@@ -1,0 +1,44 @@
+{
+  "name": "puppets",
+  "version": "1.0.0",
+  "description": "Puppets",
+  "scripts": {
+    "build": "npm run build:theater && npm run build:puppeteer",
+    "build:theater": "browserify src/theater/index.js -o public/theater/js/index.js",
+    "build:puppeteer": "browserify src/puppeteer/index.js -o public/puppeteer/js/index.js",
+    "server": "python -m SimpleHTTPServer 8000",
+    "stutter-server": "node src/stutter",
+    "peerjs-server": "node src/peerjs-server"
+  },
+  "author": "Gorka Ludlow <gorka@aquigorka.com>",
+  "license": "MIT",
+  "browserify": {
+    "transform": [
+      [
+        "babelify"
+      ],
+      [
+        "reactify",
+        {
+          "es6": true
+        }
+      ]
+    ]
+  },
+  "dependencies": {
+    "qmark": "0.0.1",
+    "qr-encode": "^0.3.0",
+    "react": "^0.13.3",
+    "react-components": "^0.4.0",
+    "react-dom": "^15.3.2",
+    "react-router": "^0.13.6"
+  },
+  "devDependencies": {
+    "babelify": "^6.4.0",
+    "browserify": "^13.1.1",
+    "peer": "^0.2.8",
+    "reactify": "^1.1.1",
+    "stutter": "git://github.com/duhruh/stutter.js/",
+    "winston": "^2.3.0"
+  }
+}
