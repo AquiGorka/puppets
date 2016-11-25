@@ -36873,6 +36873,8 @@ module.exports = require('./lib/React');
 "use strict";
 
 var peer,
+    broadcaster,
+    listeners = [],
     connection,
     config = require('../../config.js');
 
@@ -36885,9 +36887,50 @@ var randomString = function randomString(length) {
 };
 
 var NSA = {
-  start: function start(onConn, onDisconn) {
+
+  // theater
+  start: function start(_ref) {
+    var onConnection = _ref.onConnection;
+    var onClose = _ref.onClose;
+    var theaterId = _ref.theaterId;
+
+    if (theaterId) {
+      return new Promise(function (resolve, reject) {
+        //
+        peer = new Peer(config.peerjs);
+        connection = peer.connect(theaterId + '-broadcaster');
+        peer.on('error', function (err) {
+          console.warn(err);
+        });
+        //
+        connection.on('open', function () {
+          resolve(theaterId);
+          onConnection();
+        });
+      });
+    };
+
     return new Promise(function (resolve, reject) {
-      peer = new Peer(randomString(3), config.peerjs);
+      var randomId = randomString(3);
+
+      // broadcaster
+      broadcaster = new Peer(randomId + '-broadcaster', config.peerjs);
+      broadcaster.on('open', function (id) {
+        //
+        broadcaster.on('connection', function (conn) {
+          // peer connected
+          listeners.push(conn);
+          // peer left
+          conn.on('close', function () {
+            listeners = listeners.filter(function (item) {
+              return item !== conn;
+            });
+          });
+        });
+      });
+
+      // theater
+      peer = new Peer(randomId, config.peerjs);
       //
       peer.on('open', function (id) {
         //
@@ -36900,10 +36943,10 @@ var NSA = {
               // peer left
               connection = null;
               //
-              onDisconn();
+              onClose();
             });
             //
-            onConn();
+            onConnection();
           }
         });
         //
@@ -36914,11 +36957,16 @@ var NSA = {
   onData: function onData(callback) {
     if (connection) {
       connection.on('data', callback);
+      connection.on('data', function (data) {
+        listeners.forEach(function (item) {
+          return item.send(data);
+        });
+      });
     }
     return this;
   },
 
-  //
+  // puppeteer
   connect: function connect(id) {
     if (id) {
       return new Promise(function (resolve, reject) {
@@ -37106,12 +37154,6 @@ var React = require('react'),
 var Connect = React.createClass({
 	displayName: 'Connect',
 	//
-	getInitialState: function getInitialState() {
-		return {
-			url: HOST + '?t=' + this.props.theater
-		};
-	},
-	//
 	render: function render() {
 		var url = HOST + '?t=' + this.props.theater,
 		    dataURI = qr(url, { type: 6, size: 6, level: 'Q' });
@@ -37149,6 +37191,7 @@ module.exports = Connect;
 "use strict";
 
 var React = require('react'),
+    qmark = require('qmark'),
     NSA = require('../../../no-strings-attached/index.js'),
     styles = {
 	wrapper: {
@@ -37200,15 +37243,17 @@ var Home = React.createClass({
 	//
 	componentDidMount: function componentDidMount() {
 		var that = this;
+		var onConnection = function onConnection() {
+			that.setState({ puppet: true });
+		};
+		var onClose = function onClose() {
+			that.setState({ puppet: false });
+		};
 		//
-		NSA.start(function () {
-			that.setState({
-				puppet: true
-			});
-		}, function () {
-			that.setState({
-				puppet: false
-			});
+		NSA.start({
+			onConnection: onConnection,
+			onClose: onClose,
+			theaterId: qmark('t')
 		}).then(function (id) {
 			console.log('Theater started (id: ' + id + ')');
 			//
@@ -37260,7 +37305,7 @@ var Home = React.createClass({
 module.exports = Home;
 
 
-},{"../../../no-strings-attached/index.js":234,"./connect.jsx":237,"./simulation.jsx":240,"react":233}],239:[function(require,module,exports){
+},{"../../../no-strings-attached/index.js":234,"./connect.jsx":237,"./simulation.jsx":240,"qmark":6,"react":233}],239:[function(require,module,exports){
 "use strict";
 
 var scene,

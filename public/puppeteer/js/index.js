@@ -25332,6 +25332,8 @@ module.exports = require('./lib/React');
 "use strict";
 
 var peer,
+    broadcaster,
+    listeners = [],
     connection,
     config = require('../../config.js');
 
@@ -25344,9 +25346,50 @@ var randomString = function randomString(length) {
 };
 
 var NSA = {
-  start: function start(onConn, onDisconn) {
+
+  // theater
+  start: function start(_ref) {
+    var onConnection = _ref.onConnection;
+    var onClose = _ref.onClose;
+    var theaterId = _ref.theaterId;
+
+    if (theaterId) {
+      return new Promise(function (resolve, reject) {
+        //
+        peer = new Peer(config.peerjs);
+        connection = peer.connect(theaterId + '-broadcaster');
+        peer.on('error', function (err) {
+          console.warn(err);
+        });
+        //
+        connection.on('open', function () {
+          resolve(theaterId);
+          onConnection();
+        });
+      });
+    };
+
     return new Promise(function (resolve, reject) {
-      peer = new Peer(randomString(3), config.peerjs);
+      var randomId = randomString(3);
+
+      // broadcaster
+      broadcaster = new Peer(randomId + '-broadcaster', config.peerjs);
+      broadcaster.on('open', function (id) {
+        //
+        broadcaster.on('connection', function (conn) {
+          // peer connected
+          listeners.push(conn);
+          // peer left
+          conn.on('close', function () {
+            listeners = listeners.filter(function (item) {
+              return item !== conn;
+            });
+          });
+        });
+      });
+
+      // theater
+      peer = new Peer(randomId, config.peerjs);
       //
       peer.on('open', function (id) {
         //
@@ -25359,10 +25402,10 @@ var NSA = {
               // peer left
               connection = null;
               //
-              onDisconn();
+              onClose();
             });
             //
-            onConn();
+            onConnection();
           }
         });
         //
@@ -25373,11 +25416,16 @@ var NSA = {
   onData: function onData(callback) {
     if (connection) {
       connection.on('data', callback);
+      connection.on('data', function (data) {
+        listeners.forEach(function (item) {
+          return item.send(data);
+        });
+      });
     }
     return this;
   },
 
-  //
+  // puppeteer
   connect: function connect(id) {
     if (id) {
       return new Promise(function (resolve, reject) {

@@ -1,7 +1,9 @@
 "use strict";
 
 var peer,
-	connection,
+  broadcaster,
+	listeners = [],
+  connection,
   config = require('../../config.js');
 
 var randomString = function(length) {
@@ -13,41 +15,77 @@ var randomString = function(length) {
 }
 
 var NSA = {
-	start: function (onConn, onDisconn) {
-		return new Promise(function (resolve, reject) {
-			peer = new Peer(randomString(3), config.peerjs);
-			//
-			peer.on('open', function (id) {
-				//
-				peer.on('connection', function (conn) {
-					// peer connected
-					if (!connection) {
-						connection = conn;
-						//
-						connection.on('close', function () {
-							// peer left
-							connection = null;
-							//
-							onDisconn();
-						});
-						//
-						onConn();
-					}
-				});
-				//
-				resolve(id);
-			});
-		});
-	},
-	onData: function (callback) {
+
+  // theater
+  start: function({ onConnection, onClose, theaterId }) {
+    if (theaterId) {
+      return new Promise(function (resolve, reject) {
+        //
+        peer = new Peer(config.peerjs);
+        connection = peer.connect(theaterId + '-broadcaster');
+        peer.on('error', function(err) { console.warn(err); })
+        //
+        connection.on('open', function () {
+          resolve(theaterId);
+          onConnection();
+        });
+      });
+    };
+
+    return new Promise(function (resolve, reject) {
+      var randomId = randomString(3);
+
+      // broadcaster
+      broadcaster = new Peer(randomId + '-broadcaster', config.peerjs);
+      broadcaster.on('open', function (id) {
+        //
+        broadcaster.on('connection', function (conn) {
+          // peer connected
+          listeners.push(conn);
+          // peer left
+          conn.on('close', function () {
+            listeners = listeners.filter(item => item !== conn);
+          });
+        });
+      });
+
+      // theater
+      peer = new Peer(randomId, config.peerjs);
+      //
+      peer.on('open', function (id) {
+        //
+        peer.on('connection', function (conn) {
+          // peer connected
+          if (!connection) {
+            connection = conn;
+            //
+            connection.on('close', function () {
+              // peer left
+              connection = null;
+              //
+              onClose();
+            });
+            //
+            onConnection();
+          }
+        });
+        //
+        resolve(id);
+      });
+    });
+  },
+	onData: function(callback) {
 		if (connection) {
 			connection.on('data', callback);
+      connection.on('data', function(data) {
+        listeners.forEach(item => item.send(data))
+      });
 		}
 		return this;
 	},
 
-  //
-  connect: function (id) {
+  // puppeteer
+  connect: function(id) {
     if (id) {
       return new Promise(function (resolve, reject) {
         //
@@ -64,7 +102,7 @@ var NSA = {
       return Promise.reject('Puppet connect error: Please provide an id.');
     }
   },
-  send: function (data) {
+  send: function(data) {
     if (connection) {
       connection.send(data);
     }

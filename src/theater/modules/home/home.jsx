@@ -1,6 +1,7 @@
 "use strict";
 
 var React = require('react'),
+  qmark = require('qmark'),
 	NSA = require('../../../no-strings-attached/index.js'),
 	styles = {
 		wrapper: {
@@ -52,17 +53,15 @@ var Home = React.createClass({
 	//
 	componentDidMount: function () {
 		var that = this;
+    var onConnection = function () { that.setState({ puppet: true }) };
+    var onClose = function () { that.setState({ puppet: false }) };
 		//
 		NSA
-			.start(function () {
-				that.setState({
-					puppet: true
-				});
-			}, function () {
-				that.setState({
-					puppet: false
-				});
-			})
+			.start({
+        onConnection,
+        onClose,
+        theaterId: qmark('t'),
+      })
 			.then(function (id) {
 				console.log('Theater started (id: ' + id + ')');
 				//
