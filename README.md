@@ -22,6 +22,7 @@ npm run stutter-server
 * Then open up a chrome browser in your computer to http://localhost:8000/public/theater/ it will show a QR code and a URL.
 * Open the URL in a mobile device (right now it only works with Android).
 * Once the synching gets done you will see a 3D virtual puppet rendered in the computer and it will respond accordingly to your smartphone's movements in real time.
+* Using the Theater id you can open up more theaters to broadcast and render the puppet independently at different browsers or tabs.
 
 ## Future Features
 * Tests
