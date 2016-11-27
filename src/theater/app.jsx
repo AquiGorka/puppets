@@ -1,7 +1,6 @@
 "use strict";
 
 var React = require('react'),
-	TimeoutTransitionGroup = require('react-components/js/timeout-transition-group.jsx'),
 	Router = require('react-router'),
 	{ RouteHandler } = Router,
 	styles = {
@@ -39,14 +38,7 @@ var App = React.createClass({
 		//
 		return (
 			<div style={styles.app}>
-				<TimeoutTransitionGroup
-					component="div"
-					transitionName="section"
-					style={styles.section}
-					enterTimeout={500}
-					leaveTimeout={500}>
-						<RouteHandler key={module} />
-				</TimeoutTransitionGroup>
+				<RouteHandler key={module} />
 			</div>
 		);
 	}

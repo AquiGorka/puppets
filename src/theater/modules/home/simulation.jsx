@@ -3,7 +3,6 @@
 var React = require('react'),
 	qmark = require('qmark'),
 	NSA = require('../../../no-strings-attached/index.js'),
-	$ = require('jquery'),
 	styles = {
 		wrapper: {
 			overflow: 'hidden',

@@ -29,8 +29,6 @@
     "qmark": "0.0.1",
     "qr-encode": "^0.3.0",
     "react": "^0.13.3",
-    "react-components": "^0.4.0",
-    "react-dom": "^15.3.2",
     "react-router": "^0.13.6"
   },
   "devDependencies": {
