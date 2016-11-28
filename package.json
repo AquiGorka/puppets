@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Puppets",
   "scripts": {
-    "build": "npm run build:theater && npm run build:puppeteer",
+    "build": "npm run build:theater && npm run build:puppeteer && npm run build:ios",
     "build:theater": "browserify src/theater/index.js -o public/theater/js/index.js",
     "build:puppeteer": "browserify src/puppeteer/index.js -o public/puppeteer/js/index.js",
+    "build:ios": "browserify src/ios/index.js -o public/ios/index.js",
     "server": "python -m SimpleHTTPServer 8000",
     "stutter-server": "node src/stutter",
     "peerjs-server": "node src/peerjs-server"

@@ -3,14 +3,14 @@
 
 module.exports = {
     theater: {
-        host: 'http://localhost:8000/public/puppeteer/#/'
+        host: 'http://burn-the-witch.local:8000/public/puppeteer/#/'
     },
     peerjs: {
         key: 'peerjs',
-        host: 'localhost',
+        host: 'burn-the-witch.local',
         port: 9000,
         path: '/puppets',
-        config: { 'iceServers': [{ 'url': 'stun:127.0.0.1:1234' }] }
+        config: { 'iceServers': [{ 'url': 'stun:burn-the-witch.local:1234' }] }
     }
 };
 

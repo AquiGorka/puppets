@@ -33,11 +33,9 @@ var React = require('react'),
 		{
 			position: 'absolute',
 			top: 0,
-			//bottom: 0,
 			right: 0,
 			left: 0,
 			width: '100%',
-			//height: '100%',
 			margin: 0,
 			padding: 0,
 			zIndex: 0,
@@ -77,7 +75,7 @@ var oimoUtils = require('./oimo.utils.js');
 var init = function (element) {
 	// STAGE
 	// camera
-	camera = new THREE.PerspectiveCamera(80, element.offsetWidth/element.offsetHeight, 100, 10000);
+	camera = new THREE.PerspectiveCamera(80, element.offsetWidth/element.offsetHeight, 1, 10000);
 	camera.position.z = 500;
 	camera.position.y = -30;
 	// scene

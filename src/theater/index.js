@@ -8,12 +8,14 @@ var React = require('react'),
 //
 var App = require('./app.jsx'),
     Home = require('./modules/home/home.jsx'),
+    ControlBar = require('./modules/control-bar/index.jsx'),
     NotFound = require('./modules/not-found/not-found.jsx');
 
 //
 var routes = (
     <Route handler={App} path="/">
         <DefaultRoute handler={Home} />
+        <Route path="control-bar" handler={ControlBar} />
         //
         <NotFoundRoute handler={NotFound} />
     </Route>

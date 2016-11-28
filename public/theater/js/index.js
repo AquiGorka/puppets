@@ -3,14 +3,14 @@
 
 module.exports = {
     theater: {
-        host: 'http://localhost:8000/public/puppeteer/#/'
+        host: 'http://burn-the-witch.local:8000/public/puppeteer/#/'
     },
     peerjs: {
         key: 'peerjs',
-        host: 'localhost',
+        host: 'burn-the-witch.local',
         port: 9000,
         path: '/puppets',
-        config: { 'iceServers': [{ 'url': 'stun:127.0.0.1:1234' }] }
+        config: { 'iceServers': [{ 'url': 'stun:burn-the-witch.local:1234' }] }
     }
 };
 
@@ -24945,6 +24945,7 @@ var DefaultRoute = Router.DefaultRoute;
 //
 var App = require('./app.jsx'),
     Home = require('./modules/home/home.jsx'),
+    ControlBar = require('./modules/control-bar/index.jsx'),
     NotFound = require('./modules/not-found/not-found.jsx');
 
 //
@@ -24952,6 +24953,7 @@ var routes = React.createElement(
     Route,
     { handler: App, path: '/' },
     React.createElement(DefaultRoute, { handler: Home }),
+    React.createElement(Route, { path: 'control-bar', handler: ControlBar }),
     '//',
     React.createElement(NotFoundRoute, { handler: NotFound })
 );
@@ -24964,7 +24966,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-},{"./app.jsx":214,"./modules/home/home.jsx":217,"./modules/not-found/not-found.jsx":220,"react":212,"react-router":48}],216:[function(require,module,exports){
+},{"./app.jsx":214,"./modules/control-bar/index.jsx":217,"./modules/home/home.jsx":221,"./modules/not-found/not-found.jsx":224,"react":212,"react-router":48}],216:[function(require,module,exports){
 "use strict";
 
 var React = require('react'),
@@ -25284,6 +25286,516 @@ var React = require('react'),
     styles = {
 	wrapper: {
 		overflow: 'hidden',
+		backgroundColor: '#FFF',
+		position: 'absolute',
+		top: 0,
+		bottom: 0,
+		right: 0,
+		left: 0,
+		width: '100%',
+		height: '100%',
+		margin: 0,
+		padding: 0
+	},
+	modal: {
+		width: '100%%',
+		height: '100%',
+		boxSizing: 'border-box',
+		margin: 'auto'
+	},
+	canvas: {
+		height: '100%',
+		zIndex: 1,
+		position: 'relative'
+	}
+},
+    backgrounds = [{
+	position: 'absolute',
+	top: 0,
+	right: 0,
+	left: 0,
+	width: '100%',
+	margin: 0,
+	padding: 0,
+	zIndex: 0,
+	height: 'auto'
+}];
+
+var remoteDeviceData = {
+	orientation: {
+		alpha: 0,
+		beta: 0,
+		gamma: 0
+	}
+};
+
+var oimoInterval, obj, myReq, camera, scene, light, renderer, controls, world, bodys, meshs, lines, joints;
+
+var oimoUtils = require('./oimo.utils.js');
+
+var init = function init(element) {
+	// STAGE
+	// camera
+	camera = new THREE.PerspectiveCamera(30, element.offsetWidth / element.offsetHeight, 1, 10000);
+	camera.position.z = 1000;
+	camera.position.y = -150;
+	// scene
+	scene = new THREE.Scene();
+	// lights
+	light = new THREE.DirectionalLight(0xffffff);
+	light.position.set(50, 10, 10);
+	scene.add(light);
+	light = new THREE.DirectionalLight(0xffffff);
+	light.position.set(-50, 10, 10);
+	scene.add(light);
+	// renderer
+	renderer = new THREE.WebGLRenderer({
+		preserveDrawingBuffer: true,
+		alpha: true,
+		antialias: false
+	});
+	renderer.setSize(element.offsetWidth, element.offsetHeight);
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setClearColor(0x000000, 0);
+
+	// ELEMENTS + PHYSICS
+	bodys = [];
+	meshs = [];
+	lines = [];
+	joints = [];
+	//
+	oimoUtils.init(scene);
+	world = new OIMO.World();
+	// control bar
+	obj = { size: [100, 2, 200], pos: [0, 200, 0], world: world, name: 'control-bar', move: true };
+	bodys.push(new OIMO.Body(obj));
+	meshs.push(oimoUtils.add(obj));
+
+	// CONTROLS
+	controls = new THREE.TrackballControls(camera);
+	controls.rotateSpeed = 1.0;
+	controls.zoomSpeed = 1.2;
+	controls.panSpeed = 0.8;
+	controls.noZoom = false;
+	controls.noPan = false;
+	controls.staticMoving = true;
+	controls.dynamicDampingFactor = 0.3;
+	controls.keys = [65, 83, 68];
+	controls.addEventListener('change', render);
+
+	// DOM
+	element.appendChild(renderer.domElement);
+};
+
+var animate = function animate() {
+	myReq = window.requestAnimationFrame(animate);
+	controls.update();
+	render();
+};
+
+var render = function render() {
+	renderer.render(scene, camera);
+};
+
+var oimoLoop = function oimoLoop() {
+	if (world) {
+		world.step(); // update world
+	}
+
+	var alpha = remoteDeviceData.orientation.alpha !== null ? remoteDeviceData.orientation.alpha : 0,
+	    beta = remoteDeviceData.orientation.beta !== null ? remoteDeviceData.orientation.beta : 0,
+	    gamma = remoteDeviceData.orientation.gamma !== null ? remoteDeviceData.orientation.gamma : 0,
+	    degreesToRadians = Math.PI / 180,
+	    newRotation;
+
+	//console.log(alpha, beta, gamma, remoteDeviceData);
+	//
+	newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(beta * degreesToRadians, alpha * degreesToRadians, -gamma * degreesToRadians, "XYZ"));
+	if (meshs[0] && bodys[0]) {
+		meshs[0].quaternion.copy(newRotation);
+		bodys[0].setQuaternion(meshs[0].quaternion);
+		// control bar back to top
+		bodys[0].setPosition(meshs[0].position);
+	}
+
+	// puppet
+	meshs.forEach(function (mesh, index) {
+		meshs[index].position.copy(bodys[index].getPosition());
+		meshs[index].quaternion.copy(bodys[index].getQuaternion());
+	});
+
+	// joints
+	joints.forEach(function (joint, index) {
+		var pos = joint.getPosition();
+		lines[index].geometry.vertices[0].copy(pos[0]);
+		lines[index].geometry.vertices[1].copy(pos[1]);
+		lines[index].geometry.verticesNeedUpdate = true;
+	});
+};
+
+var Simulation = React.createClass({
+	displayName: 'Simulation',
+	//
+	componentDidMount: function componentDidMount() {
+		NSA.onData(function (data) {
+			remoteDeviceData = data;
+		});
+		//
+		init(React.findDOMNode(this.refs.canvas));
+		oimoInterval = setInterval(oimoLoop, 1000 / 60);
+		animate();
+		render();
+	},
+	componentWillUnmount: function componentWillUnmount() {
+		clearInterval(oimoInterval);
+		if (myReq) {
+			window.cancelAnimationFrame(myReq);
+		};
+	},
+	getInitialState: function getInitialState() {
+		return {
+			bgIndex: 0,
+			refresh: 0
+		};
+	},
+	//
+	render: function render() {
+		return React.createElement(
+			'div',
+			{ style: styles.wrapper },
+			React.createElement('div', { style: backgrounds[this.state.bgIndex] }),
+			React.createElement(
+				'div',
+				{ style: styles.modal },
+				React.createElement('div', { ref: 'canvas', style: styles.canvas })
+			)
+		);
+	}
+});
+
+module.exports = Simulation;
+
+
+},{"../../../no-strings-attached/index.js":213,"./oimo.utils.js":218,"qmark":6,"react":212}],220:[function(require,module,exports){
+"use strict";
+
+var React = require('react'),
+    qr = require('qr-encode'),
+    styles = {
+	wrapper: {
+		position: 'absolute',
+		top: 0,
+		bottom: 0,
+		left: 0,
+		right: 0,
+		height: '100%',
+		width: '100%',
+		zIndex: 1,
+		overflow: 'hidden',
+		textAlign: 'center'
+	},
+	modal: {
+		display: 'inline-block',
+		textAlign: 'center',
+		borderRadius: 5,
+		margin: '10% auto',
+		backgroundColor: '#FFF',
+		color: '#040F1A',
+		height: 400,
+		width: 400
+	},
+	preps: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		width: '100%',
+		height: '90%'
+	},
+	spinner: {
+		height: 25
+	},
+	qr: {
+		wrapper: {
+			height: 300,
+			margin: 20
+		},
+		image: {
+			padding: 10,
+			border: '2px solid #040F1A',
+			height: 280
+		}
+	},
+	url: {
+		padding: '10px 20px'
+	}
+},
+    config = require('../../../../config.js'),
+    HOST = config.theater.host;
+
+var Connect = React.createClass({
+	displayName: 'Connect',
+	//
+	render: function render() {
+		var url = HOST + '?t=' + this.props.theater,
+		    dataURI = qr(url, { type: 6, size: 6, level: 'Q' });
+		//
+		return React.createElement(
+			'div',
+			{ style: styles.wrapper },
+			React.createElement(
+				'div',
+				{ style: styles.modal },
+				React.createElement(
+					'div',
+					{ style: styles.qr.wrapper },
+					React.createElement('img', { style: styles.qr.image, src: dataURI })
+				),
+				React.createElement(
+					'div',
+					null,
+					'Follow the QR Code or this link with your Android phone (Chrome App):'
+				),
+				React.createElement(
+					'div',
+					{ style: styles.url },
+					url
+				)
+			)
+		);
+	}
+});
+
+module.exports = Connect;
+
+
+},{"../../../../config.js":1,"qr-encode":15,"react":212}],221:[function(require,module,exports){
+"use strict";
+
+var React = require('react'),
+    qmark = require('qmark'),
+    NSA = require('../../../no-strings-attached/index.js'),
+    styles = {
+	wrapper: {
+		position: 'absolute',
+		top: 0,
+		bottom: 0,
+		left: 0,
+		right: 0,
+		height: '100%',
+		width: '100%',
+		zIndex: 1,
+		overflow: 'hidden',
+		textAlign: 'center'
+	},
+	modal: {
+		display: 'inline-block',
+		textAlign: 'center',
+		borderRadius: 5,
+		margin: '10% auto',
+		backgroundColor: '#FFF',
+		color: '#040F1A',
+		height: 400,
+		width: 400
+	},
+	preps: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		width: '100%',
+		height: '90%'
+	},
+	spinner: {
+		height: 25
+	},
+	err: {
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		height: '60%',
+		fontSize: 26
+	}
+};
+
+var Connect = require('./connect.jsx'),
+    Simulation = require('./simulation.jsx');
+
+var Home = React.createClass({
+	displayName: 'Home',
+	//
+	componentDidMount: function componentDidMount() {
+		var that = this;
+		var onConnection = function onConnection() {
+			that.setState({ puppet: true });
+		};
+		var onClose = function onClose() {
+			that.setState({ puppet: false });
+		};
+		//
+		NSA.start({
+			onConnection: onConnection,
+			onClose: onClose,
+			theaterId: qmark('t')
+		}).then(function (id) {
+			console.log('Theater started (id: ' + id + ')');
+			//
+			that.setState({
+				theater: id
+			});
+		});
+	},
+	getInitialState: function getInitialState() {
+		return {
+			puppet: false,
+			theater: null,
+			error: !(navigator.userAgent.toLowerCase().indexOf('chrome') > -1)
+		};
+	},
+	//
+	render: function render() {
+		var content = React.createElement(
+			'div',
+			{ style: styles.wrapper },
+			React.createElement(
+				'div',
+				{ style: styles.modal },
+				React.createElement(
+					'div',
+					{ style: styles.preps },
+					React.createElement('img', { src: './modules/home/img/spinner.gif', style: styles.spinner })
+				)
+			)
+		);
+		if (this.state.theater) {
+			content = React.createElement(Connect, { theater: this.state.theater });
+		}
+		if (this.state.puppet) {
+			content = React.createElement(Simulation, null);
+		}
+		if (this.state.error) {
+			content = React.createElement(
+				'div',
+				{ style: styles.err },
+				'This demo requires Chrome to work'
+			);
+		}
+		//
+		return content;
+	}
+});
+
+module.exports = Home;
+
+
+},{"../../../no-strings-attached/index.js":213,"./connect.jsx":220,"./simulation.jsx":223,"qmark":6,"react":212}],222:[function(require,module,exports){
+"use strict";
+
+var scene,
+    geos = {},
+    mats = {};
+
+var basicTexture = function basicTexture(n, r) {
+	var canvas = document.createElement('canvas');
+	canvas.width = canvas.height = 64;
+	var ctx = canvas.getContext('2d');
+	var color;
+	if (n === 0) color = "#58C3FF"; // sphere
+	if (n === 1) color = "#3580AA"; // sphere sleep
+	if (n === 2) color = "#FFAA58"; // box
+	if (n === 3) color = "#AA8038"; // box sleep
+	if (n === 4) color = "#1d1f20"; // static
+	if (n === 5) color = "#58FFAA"; // cyl
+	if (n === 6) color = "#38AA80"; // cyl sleep
+	ctx.fillStyle = color;
+	ctx.fillRect(0, 0, 64, 64);
+	ctx.fillStyle = "rgba(0,0,0,0.1);"; //colors[1];
+	ctx.fillRect(0, 0, 32, 32);
+	ctx.fillRect(32, 32, 32, 32);
+	var tx = new THREE.Texture(canvas);
+	tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
+	tx.repeat = new THREE.Vector2(r || 1, r || 1);
+	tx.needsUpdate = true;
+	return tx;
+};
+
+var ToRad = Math.PI / 180,
+    ToDeg = 180 / Math.PI;
+
+var _init = function _init() {
+	geos['sph'] = new THREE.BufferGeometry();
+	geos['box'] = new THREE.BufferGeometry();
+	geos['cyl'] = new THREE.BufferGeometry();
+	geos['sph'].fromGeometry(new THREE.SphereGeometry(1, 12, 10));
+	geos['cyl'].fromGeometry(new THREE.CylinderGeometry(0.5, 0.5, 1, 12, 1));
+	geos['box'].fromGeometry(new THREE.BoxGeometry(1, 1, 1));
+	geos['plane'] = new THREE.PlaneBufferGeometry(1, 1);
+	geos['plane'].applyMatrix(new THREE.Matrix4().makeRotationX(-90 * ToRad));
+	//
+	mats['sph'] = new THREE.MeshLambertMaterial({ map: basicTexture(0), name: 'sph' });
+	mats['ssph'] = new THREE.MeshLambertMaterial({ map: basicTexture(1), name: 'ssph' });
+	mats['box'] = new THREE.MeshLambertMaterial({ map: basicTexture(2), name: 'box' });
+	mats['sbox'] = new THREE.MeshLambertMaterial({ map: basicTexture(3), name: 'sbox' });
+	mats['cyl'] = new THREE.MeshLambertMaterial({ map: basicTexture(5), name: 'cyl' });
+	mats['scyl'] = new THREE.MeshLambertMaterial({ map: basicTexture(6), name: 'scyl' });
+	mats['static'] = new THREE.MeshLambertMaterial({ map: basicTexture(4), name: 'static' });
+	mats['static2'] = new THREE.MeshLambertMaterial({ map: basicTexture(4, 6), name: 'static2' });
+	mats['joint'] = new THREE.LineBasicMaterial({ color: 0x00FF00 });
+};
+
+module.exports = {
+	init: function init(_scene) {
+		scene = _scene;
+		_init();
+	},
+	add: function add(obj, target) {
+		var type = obj.type || 'box';
+		var size = obj.size || [10, 10, 10];
+		var pos = obj.pos || [0, 0, 0];
+		var rot = obj.rot || [0, 0, 0];
+		var move = obj.move || false;
+		if (obj.flat) {
+			type = 'plane';pos[1] += size[1] * 0.5;
+		}
+		//
+		if (type.substring(0, 5) === 'joint') {
+			//_____________ Joint
+			var joint;
+			var pos1 = obj.pos1 || [0, 0, 0];
+			var pos2 = obj.pos2 || [0, 0, 0];
+			var geo = new THREE.Geometry();
+			geo.vertices.push(new THREE.Vector3(pos1[0], pos1[1], pos1[2]));
+			geo.vertices.push(new THREE.Vector3(pos2[0], pos2[1], pos2[2]));
+			joint = new THREE.Line(geo, mats.joint, THREE.LinePieces);
+			if (target) target.add(joint);else scene.add(joint);
+			return joint;
+		} else {
+			//_____________ Object
+			var mesh;
+			if (type == 'box' && move) mesh = new THREE.Mesh(geos.box, mats.box);
+			if (type == 'box' && !move) mesh = new THREE.Mesh(geos.box, mats['static']);
+			if (type == 'plane' && !move) mesh = new THREE.Mesh(geos.plane, mats.static2);
+			if (type == 'sphere' && move) mesh = new THREE.Mesh(geos.sph, mats.sph);
+			if (type == 'sphere' && !move) mesh = new THREE.Mesh(geos.sph, mats['static']);
+			if (type == 'cylinder' && move) mesh = new THREE.Mesh(geos.cyl, mats.cyl);
+			if (type == 'cylinder' && !move) mesh = new THREE.Mesh(geos.cyl, mats['static']);
+			mesh.scale.set(size[0], size[1], size[2]);
+			mesh.position.set(pos[0], pos[1], pos[2]);
+			mesh.rotation.set(rot[0] * ToRad, rot[1] * ToRad, rot[2] * ToRad);
+			if (target) target.add(mesh);else scene.add(mesh);
+			return mesh;
+		}
+	}
+};
+
+
+},{}],223:[function(require,module,exports){
+"use strict";
+
+var React = require('react'),
+    qmark = require('qmark'),
+    NSA = require('../../../no-strings-attached/index.js'),
+    styles = {
+	wrapper: {
+		overflow: 'hidden',
 		backgroundColor: '#000',
 		position: 'absolute',
 		top: 0,
@@ -25310,11 +25822,9 @@ var React = require('react'),
     backgrounds = [{
 	position: 'absolute',
 	top: 0,
-	//bottom: 0,
 	right: 0,
 	left: 0,
 	width: '100%',
-	//height: '100%',
 	margin: 0,
 	padding: 0,
 	zIndex: 0,
@@ -25341,7 +25851,7 @@ var oimoUtils = require('./oimo.utils.js');
 var init = function init(element) {
 	// STAGE
 	// camera
-	camera = new THREE.PerspectiveCamera(80, element.offsetWidth / element.offsetHeight, 100, 10000);
+	camera = new THREE.PerspectiveCamera(80, element.offsetWidth / element.offsetHeight, 1, 10000);
 	camera.position.z = 500;
 	camera.position.y = -30;
 	// scene
@@ -25825,7 +26335,7 @@ var Simulation = React.createClass({
 module.exports = Simulation;
 
 
-},{"../../../no-strings-attached/index.js":213,"./oimo.utils.js":218,"qmark":6,"react":212}],220:[function(require,module,exports){
+},{"../../../no-strings-attached/index.js":213,"./oimo.utils.js":222,"qmark":6,"react":212}],224:[function(require,module,exports){
 "use strict";
 
 var React = require('react'),
