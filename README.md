@@ -24,13 +24,16 @@ npm run stutter-server
 * Once the synching gets done you will see a 3D virtual puppet rendered in the computer and it will respond accordingly to your smartphone's movements in real time.
 * Using the Theater id you can open up more theaters to broadcast and render the puppet independently at different browsers or tabs (...public/theater/#/?t=theater_id_here ).
 * Added a new section: control-bar. This sections renders the control bar as it mimics the smarthpone's orientation.
-* Added ios support: clone this repo (github.com/aquigorka/ios-webrtc) and deploy an app to any device. The app should request the file at public/ios/index.js and the app will have full WebRTC support and control the bar's orientation.
+
+
+## iOS support
+* Clone this repo: github.com/aquigorka/ios-webrtc
+* Deploy an app to any device. The app should request the file at public/ios/index.js (this repo) and it will have full WebRTC support.
 * Please set the correct hostname or ip address in the config.js file.
 
 ## Future Features
 * Tests
 * Linter
-* Publish iOS repo to use iPhones or iPads as remote controls - via a native extension WebRTC can be used in a hybrid app (meaning you will have the full WebRTC API available in JavaScript).
 
 ## Tech Stack
 * JavaScript
