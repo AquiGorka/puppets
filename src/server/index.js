@@ -11,5 +11,3 @@ http.listen(PORT);
 server.use(express.static(__dirname + '/../../'));
 //
 console.log('Server ON : *:' + PORT);
-//
-return this;
