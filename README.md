@@ -25,7 +25,7 @@ npm run stutter-server
 * Using the Theater id you can open up more theaters to broadcast and render the puppet independently at different browsers or tabs (...public/theater/#/?t=theater_id_here ).
 * Added a new section: control-bar. This sections renders the control bar as it mimics the smarthpone's orientation.
 * Added ios support: clone this repo (github.com/aquigorka/ios-webrtc) and deploy an app to any device. The app should request the file at public/ios/index.js and the app will have full WebRTC support and control the bar's orientation.
-** Please set the correct hostname or ip address in the config.js file
+* Please set the correct hostname or ip address in the config.js file.
 
 ## Future Features
 * Tests
