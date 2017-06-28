@@ -3,6 +3,9 @@
 
 ![Puppets Screenshot](https://raw.githubusercontent.com/AquiGorka/puppets/master/static/puppets.png)
 
+
+[![Puppets](https://img.youtube.com/vi/u5ARH07qRWQ/0.jpg)](https://www.youtube.com/watch?v=u5ARH07qRWQ "Puppets")
+
 ## Links
 
 - http://puppets.life
