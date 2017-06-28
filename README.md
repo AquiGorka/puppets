@@ -1,6 +1,18 @@
 # Puppets
 3D virtual puppet remote controlled via smartphone.
 
+![Puppets Screenshot](https://raw.githubusercontent.com/AquiGorka/puppets/master/static/puppets.png)
+
+## Links
+
+- http://puppets.life
+- http://demo.puppets.life
+- http://show.puppets.life
+- http://slides.com/aquigorka/puppets
+- http://aquigorka.net/project/puppets-life
+- http://aquigorka.com/2015/11/presentacion-oficial-puppets-life
+
+
 ## Description
 A puppet consisting of 10 body elements (head, torso, shoulders, arms, thighs and legs) and the proper joints (to connect the body elements and the control bar) gets rendered in the browser via WebGL (using ThreeJS).
 
