@@ -58,7 +58,6 @@ npm run stutter-server
 * WebGL
 * ThreeJS
 * oimo.js
-* Peer.js
 
 ### License
 MIT
