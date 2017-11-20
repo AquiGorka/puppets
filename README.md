@@ -11,7 +11,6 @@
 
 - http://puppets.life
 - http://demo.puppets.life
-- http://show.puppets.life/theater
 - http://slides.com/aquigorka/puppets
 - http://aquigorka.net/project/puppets-life
 - http://aquigorka.com/2015/11/presentacion-oficial-puppets-life
