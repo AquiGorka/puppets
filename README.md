@@ -29,6 +29,7 @@ Once the connection is established the smartphone's gyroscope sends it's data ov
 ## Dev
 ```sh
 npm install
+npm run build
 npm run server
 npm run peerjs-server
 npm run stutter-server
